@@ -6,7 +6,7 @@
 #               
 #       
 # TO DO
-#               - Add in UI to help specify Search String! At the moment this is lamely HardCoded  - FIX THIS!             
+#               - Add in UI to help specify Search String! At the moment this is lamely HardCoded  - FIX THIS NOW!             
 #               - Complete Tool Tips
 #               - Record Help Video of tool Set
 #
