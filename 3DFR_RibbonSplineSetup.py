@@ -710,13 +710,12 @@ class RibbonSpline_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
 
 
 #====================================================
-#	Class for inheriting RibbonSpline UI
+#	Class for inheriting RibbonSpline UI - This stage seems necessary in order to dock the UI on to the Right hand side of Maya
 #====================================================	
 
 class Main_Ui(RibbonSpline_Ui):
 	def __init__(self):
 		super(Main_Ui, self).__init__()
-
 		self.setDockableParameters(dockable = True, width = 0, height = 400)
 
 #====================================================
