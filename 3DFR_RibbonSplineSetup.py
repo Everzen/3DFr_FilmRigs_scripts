@@ -436,8 +436,7 @@ class RibbonSpline(object):
 #====================================================
 
 class RibbonSpline_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
-	currentRibbonSplineName = ""
-
+	"""Class to carry all the functionality for the RibbonSpline UI"""
 	def __init__(self):
 		super(RibbonSpline_Ui, self).__init__()
 		self.ribbonSpline = None
@@ -730,11 +729,3 @@ if __name__ == "__main__":
 	# except:
 	# 	pass
 
-#====================================================
-#	Class for launching UI
-#====================================================
-
-class Launch(Main_Ui):
-	def __init__(self):
-		super(Launch, self).__init__()
-		self.show()
