@@ -26,8 +26,9 @@
 __author__ = "3DFramework"
 __version__ = "1.0"
 
-
+from PySide import QtCore, QtGui
 import maya.cmds as cmds
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 def jointNameCheck(jointName, nameSearchString):
     validName = True
@@ -63,58 +64,35 @@ def nameRebuild(name,searchString,typeToReplace, replaceWith, nameAddition = "ct
 
 
 
-######################################EXECUTION############################################################################
-searchStringName = "fronty" 
-
-mySel = cmds.ls(sl = True)
-mySelectionCount = len(mySel)
-#print mySel
-
-myCtrlGrp = None 
-myPoleVectorGrp = None
-myJnts = cmds.ls(mySel, type = "joint") #This is going to be the Joint that is controlled
-#print "my Joints : "  + str(myJnts)
- 
 
 ##############################Check that we have valid Joint Names########################################
-validJointNames = True
+def checkJointNames(jntList):
+    validJointNames = True
 
-for jnt in myJnts:
-    if not jointNameCheck(jnt, searchStringName):
-        validJointNames = False
+    for jnt in myJnts:
+        if not jointNameCheck(jnt, searchStringName):
+            validJointNames = False
+    return validJointNames
+
 ###########################Check that we have a valid selection (based on count)#############################
-validSelectionCount = False
-if (mySelectionCount == 3):
-    validSelectionCount = True
-    myCtrlGrp = mySel[mySelectionCount-1] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
-elif (mySelectionCount == 4):
-    validSelectionCount = True
-    myCtrlGrp = mySel[mySelectionCount-2] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED SECOND LAST!
-    myPoleVectorGrp = mySel[mySelectionCount-1] #This is going to be the Pole Vector Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
+def checkSelectionCount(mySelectionCount):
+    validSelectionCount = False
+    if (mySelectionCount == 3):
+        validSelectionCount = True
+        myCtrlGrp = mySel[mySelectionCount-1] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
+    elif (mySelectionCount == 4):
+        validSelectionCount = True
+        myCtrlGrp = mySel[mySelectionCount-2] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED SECOND LAST!
+        myPoleVectorGrp = mySel[mySelectionCount-1] #This is going to be the Pole Vector Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
 
-if not validSelectionCount: print "Error : Incorrect number of objects selected. Please select the start joint, the end joint, and the master controller and optionally the Pole Vector Ctrl group that you want to assign"
+    if not validSelectionCount: print "Error : Incorrect number of objects selected. Please select the start joint, the end joint, and the master controller and optionally the Pole Vector Ctrl group that you want to assign"
+    return validSelectionCount
 
 #######################################Check we have a valid Control Group########################################
-validCtrlGroup = False
-if "Ctrl" in myCtrlGrp:
-    grpChild = cmds.listRelatives(myCtrlGrp, children=True)
-    #print grpChild #Finds Transform
-    grpCurveChild = cmds.listRelatives(grpChild[0], children=True)
-    #print grpCurveChild
-    grpCurveShape = cmds.ls(grpCurveChild, type="nurbsCurve")
-    #print grpCurveShape
-    if len(grpCurveShape) != 0:
-        #print "We have a valid Control"
-        validCtrlGroup = True
-    else: print "No valid Control Group Selected"
-else:
-    print "No valid Control Group Selected"
-
-#######################################Check we have a valid Pole Vector Group########################################
-validPoleGroup = False
-if myPoleVectorGrp:
-    if "Ctrl" in myPoleVectorGrp:
-        grpChild = cmds.listRelatives(myPoleVectorGrp, children=True)
+def checkValidControlGrp(ctrlGrp, controlType):
+    validCtrlGroup = False
+    if "Ctrl" in myCtrlGrp:
+        grpChild = cmds.listRelatives(myCtrlGrp, children=True)
         #print grpChild #Finds Transform
         grpCurveChild = cmds.listRelatives(grpChild[0], children=True)
         #print grpCurveChild
@@ -122,10 +100,11 @@ if myPoleVectorGrp:
         #print grpCurveShape
         if len(grpCurveShape) != 0:
             #print "We have a valid Control"
-            validPoleGroup = True
-        else: print "No valid Pole Control Group Selected"
+            validCtrlGroup = True
+        else: print "No valid " + controlType + " Selected"
     else:
-        print "No valid Pole Control Group Selected"
+        print "No valid " + controlType + " Selected"
+    return validCtrlGroup
 
 
 
@@ -182,3 +161,65 @@ else:
 
 
 
+
+######################################################################################################
+#====================================================
+#   Create IK Setup UI
+#====================================================
+
+
+class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
+    """Class to block out all the main functionality of the IKSetup UI"""
+    def __init__(self):
+        super(TDFR_IKSetup_Ui, self).__init__()
+        self.searchStringName = None
+        self.CtrlGrp = None
+        self.poleGrp = None
+
+    def buildIKSetup(self):
+        """Method to do the complete IK setup, starting with selection checks and then moving on to construction"""
+        
+        # self.searchStringName = lineedit
+        mySel = cmds.ls(sl = True)
+        mySelectionCount = len(mySel)
+        #print mySel
+
+        myCtrlGrp = None 
+        myPoleVectorGrp = None
+        myJnts = cmds.ls(mySel, type = "joint") #This is going to be the Joint that is controlled
+        #print "my Joints : "  + str(myJnts)
+           
+        validSelection = True
+        if not checkJointNames(myJnts): validSelection = False
+        if not  checkSelectionCount(mySelectionCount): validSelection = False
+        
+        validSelectionCount = False
+        if (mySelectionCount == 3):
+            validSelectionCount = True
+            self.ctrlGrp = mySel[mySelectionCount-1] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
+        elif (mySelectionCount == 4):
+            validSelectionCount = True
+            self.ctrlGrp = mySel[mySelectionCount-2] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED SECOND LAST!
+            self.poleGrp = mySel[mySelectionCount-1] #This is going to be the Pole Vector Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
+
+        if not validSelectionCount: 
+            print "Error : Incorrect number of objects selected. Please select the start joint, the end joint, and the master controller and optionally the Pole Vector Ctrl group that you want to assign"
+            validSelection = False
+#====================================================
+#   Class for inheriting TDFR_IKSetup_Ui
+#====================================================   
+
+class Main_Ui(TDFR_IKSetup_Ui):
+    def __init__(self):
+        super(Main_Ui, self).__init__()
+        self.setDockableParameters(dockable = True, width = 0, height = 400)
+
+#====================================================
+#   Function for creating UI, only runs in standalone
+#====================================================           
+
+if __name__ == "__main__":
+    # try:
+    Main_Ui().show()
+    # except:
+    #   pass
