@@ -6,11 +6,11 @@
 #               
 #       
 # TO DO
-#               - 
+#               - In the long run setup little "L" and "G" shapes to attach to the local and Global Control. But for this, probably just use different colours and names, but the same Curve Shape
 #
 #
 # RECENT FEATURES 
-#               - 
+#               - Basic UI Setup
 #====================================================
 # GUIDE
 #               - 
