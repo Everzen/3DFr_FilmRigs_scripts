@@ -66,10 +66,10 @@ def nameRebuild(name,searchString,typeToReplace, replaceWith, nameAddition = "ct
 
 
 ##############################Check that we have valid Joint Names########################################
-def checkJointNames(jntList):
+def checkJointNames(jntList, searchStringName):
     validJointNames = True
 
-    for jnt in myJnts:
+    for jnt in jntList:
         if not jointNameCheck(jnt, searchStringName):
             validJointNames = False
     return validJointNames
@@ -91,8 +91,8 @@ def checkJointNames(jntList):
 #######################################Check we have a valid Control Group########################################
 def checkValidControlGrp(ctrlGrp, controlType):
     validCtrlGroup = False
-    if "Ctrl" in myCtrlGrp:
-        grpChild = cmds.listRelatives(myCtrlGrp, children=True)
+    if "Ctrl" in ctrlGrp:
+        grpChild = cmds.listRelatives(ctrlGrp, children=True)
         #print grpChild #Finds Transform
         grpCurveChild = cmds.listRelatives(grpChild[0], children=True)
         #print grpCurveChild
@@ -172,14 +172,40 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
     """Class to block out all the main functionality of the IKSetup UI"""
     def __init__(self):
         super(TDFR_IKSetup_Ui, self).__init__()
-        self.searchStringName = None
         self.CtrlGrp = None
         self.poleGrp = None
+        self.searchStringName = None #This is the UI descriptor
+
+        masterIKFrame = QtGui.QFrame(self) # Create frame and Layout to hold all the User List View
+        masterIKFrame.setFrameShape(QtGui.QFrame.StyledPanel)
+        topUIVLayout = QtGui.QVBoxLayout(masterIKFrame)
+
+        nameStringLbl = QtGui.QLabel("Please select the start and end joint of the IK system you want to setup.\nThen please select the group of the Control and/or PoleVector Control. \n-----------------------------\nPlease name descriptor:")
+        nameStringLbl.setToolTip("Joints should have naming convention: \"spider00_jnt_r_front00_leg_ik\" - In this case the descriptor is \"front\"\nMain IK control should have naming convention: \"spider00_grp_iKCtrl\"\nPole Vector Control should have naming convention: \"spider00_grp_pVCtrl" )
+
+        self.nameStringLE = QtGui.QLineEdit()
+        self.nameStringLE.setMaximumWidth(300)
+        topUIVLayout.addWidget(nameStringLbl)
+        topUIVLayout.addWidget(self.nameStringLE)
+
+        self.executeSwitchBtn = QtGui.QPushButton('Build the IK System')
+        self.executeSwitchBtn.clicked.connect(self.buildIKSetup)
+        self.executeSwitchBtn.setToolTip("Please hit the big green button when all the rest of the options are filled out, and it will hopefully build you an IK system.")
+        self.executeSwitchBtn.setMinimumHeight(80)
+        self.executeSwitchBtn.setMinimumWidth(300)
+        self.executeSwitchBtn.setStyleSheet("background-color: green")
+        topUIVLayout.addWidget(self.executeSwitchBtn)
+
+        self.setGeometry(385, 200, 815, 610)
+        self.setWindowTitle('IK Setup')    
+        self.show()
+
 
     def buildIKSetup(self):
         """Method to do the complete IK setup, starting with selection checks and then moving on to construction"""
         self.CtrlGrp = None
         self.poleGrp = None
+        self.searchStringName = self.nameStringLE.text()
 
         # self.searchStringName = lineedit
         mySel = cmds.ls(sl = True)
@@ -189,28 +215,33 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
         myCtrlGrp = None 
         myPoleVectorGrp = None
         myJnts = cmds.ls(mySel, type = "joint") #This is going to be the Joint that is controlled
-        #print "my Joints : "  + str(myJnts)
-           
+        print "my Joints : ", myJnts
+        print "my Sel : ",  mySel
+
         validSelection = True
-        if not checkJointNames(myJnts): validSelection = False
-        if not  checkSelectionCount(mySelectionCount): validSelection = False
+        if not checkJointNames(myJnts, self.searchStringName): validSelection = False
         
         validSelectionCount = False
-        if (mySelectionCount == 3):
+        if (mySelectionCount < 3):
+            print "Error : Too few  objects selected. Please select the start joint, the end joint, and the master controller and optionally the Pole Vector Ctrl group that you want to assign"
+        elif (mySelectionCount == 3):
             validSelectionCount = True
             self.ctrlGrp = mySel[mySelectionCount-1] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
         elif (mySelectionCount == 4):
             validSelectionCount = True
             self.ctrlGrp = mySel[mySelectionCount-2] #This is going to be the Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED SECOND LAST!
             self.poleGrp = mySel[mySelectionCount-1] #This is going to be the Pole Vector Control that is duplicated - MAKE SURE THE CONTROL GROUP IS SELECTED LAST!
+        elif (mySelectionCount > 4):
+            print "Error : Too many objects selected. Please select the start joint, the end joint, and the master controller and optionally the Pole Vector Ctrl group that you want to assign"
 
         if not validSelectionCount: 
             print "Error : Incorrect number of objects selected. Please select the start joint, the end joint, and the master controller and optionally the Pole Vector Ctrl group that you want to assign"
             validSelection = False
 
-        #Now check the control groups for the main IK control and the pole vector
-        if not checkValidControlGrp(self.ctrlGrp, "Control Group"): validSelection = False
-        if not checkValidControlGrp(self.poleGrp, "Pole Vector Group"): validSelection = False
+        if validSelection:
+            #Now check the control groups for the main IK control and the pole vector
+            if not checkValidControlGrp(self.ctrlGrp, "Control Group"): validSelection = False
+            if not checkValidControlGrp(self.poleGrp, "Pole Vector Group"): validSelection = False
 
         if validSelection:
             #All conditions are met, we can now continue to build the IK system
@@ -225,9 +256,9 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
             cmds.rename(newIK[1], newEffName)
             tempConst = cmds.parentConstraint(newLoc,newIK[0]) #Parent the IKHandle to the Locator
             #Now craete the new controller to control this section
-            newCtrlPack = cmds.duplicate(myCtrlGrp, renameChildren=True)
-            newGrpName = nameRebuild(jnt, self.searchStringName, "jnt", "grp")
-            newCtrlName = nameRebuild(jnt, self.searchStringName, "jnt", "cv")
+            newCtrlPack = cmds.duplicate(self.ctrlGrp, renameChildren=True)
+            newGrpName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp")
+            newCtrlName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv")
             cmds.rename(newCtrlPack[0], newGrpName)
             cmds.rename(newCtrlPack[1], newCtrlName)
             #myNewCtrlGrps.append(newGrpName)
@@ -237,24 +268,25 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
             #Sonow correctly parent Constrain the Joint to the control
             cmds.parentConstraint(cmds.listRelatives(newGrpName, children=True)[0],newLoc)
             
-            if validPoleGroup:
-                newPoleCtrlPack = cmds.duplicate(myPoleVectorGrp, renameChildren=True)
-                newPoleGrpName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp","pole_ctrl")
-                newPoleCtrlName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv","pole_ctrl")
-                cmds.rename(newPoleCtrlPack[0], newPoleGrpName)
-                cmds.rename(newPoleCtrlPack[1], newPoleCtrlName)
-                tempConst = cmds.pointConstraint(myJnts[0],myJnts[1],newPoleGrpName)   
-                cmds.delete(tempConst) #Delete the temporary constraint
-                #Now we need to find the second joint down the chain so we can figure out how to move out the PoleVector
-                secondJnt = cmds.listRelatives(myJnts[0], children=True)[0]
-                jointPos = cmds.xform(secondJnt, q=True, t=True, ws=True)
-                print str(jointPos)
-                newPoleGrpPos = cmds.xform(newPoleGrpName, q=True, t=True, ws=True)
-                posDiff = [jointPos[0] - newPoleGrpPos[0],jointPos[1] - newPoleGrpPos[1],jointPos[2] - newPoleGrpPos[2]]
-                cmds.xform(newPoleGrpName, ws=True, t=[jointPos[0] + posDiff[0],jointPos[1] + posDiff[1],jointPos[2] + posDiff[2]])
-                #newLoc = cmds.spaceLocator(name=newLocName)
-                #cmds.xform(newLoc, ws=True, t=jointPos)
-                cmds.poleVectorConstraint(newPoleCtrlName, newIKName)
+            if self.poleGrp:
+                if cmds.objExists(self.poleGrp):
+                    newPoleCtrlPack = cmds.duplicate(self.poleGrp, renameChildren=True)
+                    newPoleGrpName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp","pole_ctrl")
+                    newPoleCtrlName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv","pole_ctrl")
+                    cmds.rename(newPoleCtrlPack[0], newPoleGrpName)
+                    cmds.rename(newPoleCtrlPack[1], newPoleCtrlName)
+                    tempConst = cmds.pointConstraint(myJnts[0],myJnts[1],newPoleGrpName)   
+                    cmds.delete(tempConst) #Delete the temporary constraint
+                    #Now we need to find the second joint down the chain so we can figure out how to move out the PoleVector
+                    secondJnt = cmds.listRelatives(myJnts[0], children=True)[0]
+                    jointPos = cmds.xform(secondJnt, q=True, t=True, ws=True)
+                    print str(jointPos)
+                    newPoleGrpPos = cmds.xform(newPoleGrpName, q=True, t=True, ws=True)
+                    posDiff = [jointPos[0] - newPoleGrpPos[0],jointPos[1] - newPoleGrpPos[1],jointPos[2] - newPoleGrpPos[2]]
+                    cmds.xform(newPoleGrpName, ws=True, t=[jointPos[0] + posDiff[0],jointPos[1] + posDiff[1],jointPos[2] + posDiff[2]])
+                    #newLoc = cmds.spaceLocator(name=newLocName)
+                    #cmds.xform(newLoc, ws=True, t=jointPos)
+                    cmds.poleVectorConstraint(newPoleCtrlName, newIKName)
 
                 
             else:
@@ -266,7 +298,7 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
 class Main_Ui(TDFR_IKSetup_Ui):
     def __init__(self):
         super(Main_Ui, self).__init__()
-        self.setDockableParameters(dockable = True, width = 0, height = 400)
+        self.setDockableParameters(dockable = True, width = 385, height = 200)
 
 #====================================================
 #   Function for creating UI, only runs in standalone
