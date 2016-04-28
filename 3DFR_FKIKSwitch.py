@@ -8,6 +8,7 @@
 # TO DO
 #				- Complete Tool Tips
 #				- Record Help Video of tool Set
+#				- Undo Queue save is added, but is not working - Maybe try and fix, but for now save before execution of tool
 #
 #====================================================
 # GUIDE
@@ -506,6 +507,8 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 
 	def switchBuild(self):
 		if self.switchSetupCheck():
+			#Close Undo Chunk
+			cmds.undoInfo(openChunk=True)			
 			self.pmaSwitchNode = None
 			self.checkMasterCtrlAtt()
 			pMAName = nameSwitchRebuild(self.masterCtrl, "cv", "pma", nameEnd = self.masterCtrlAtt + "Switch")
@@ -519,8 +522,8 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 			self.jointParentConstraints()
 			#Now implement all the ctrl; visibility
 			self.controlsVisibility()
+			cmds.undoInfo(closeChunk=True)
 
-				
-
+			
 if __name__ == "__main__":
 	fred = FRFKtoIKSwitchUI()

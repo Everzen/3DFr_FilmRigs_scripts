@@ -94,6 +94,8 @@ def fKBuilder(nameSearchString):
         myNewCtrlGrps = []
         
         if validCtrl and (len(myJnts)) != 0:
+            cmds.undoInfo(openChunk=True)           
+
             #We are good to go
             for jnt in myJnts:
                 #print "My control is : " + myCtrlGrp
@@ -117,9 +119,8 @@ def fKBuilder(nameSearchString):
                 parentCVCtrl = cmds.listRelatives(myNewCtrlGrps[i-1], children=True)[0]
                 cmds.parentConstraint(parentCVCtrl,ctrlGrp,maintainOffset=True)
                 
-        
         cmds.select(mySel) #Return Selection to orginal before Tool Execution
-        #print "myNewCtrlGrps : " + str(myNewCtrlGrps)
+        cmds.undoInfo(closeChunk=True)           
 
 
 #####################################Basic UI Code############################################################################################import maya.cmds as cmds

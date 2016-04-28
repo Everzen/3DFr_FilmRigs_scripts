@@ -15,7 +15,7 @@
 #
 # IMPORTANT NOTES
 #               - This setup does not deal with frozen transforms on objects. Make sure that all controls especially have not had transforms frozen
-#
+#				- Requires the plugin "closestPointOnCurve", also check "closestPointOnSurface" 
 ###########################################################################################################################################################
 """
 
