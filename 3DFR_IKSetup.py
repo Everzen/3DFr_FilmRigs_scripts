@@ -6,14 +6,10 @@
 #               
 #       
 # TO DO
+#               - Add in UI to help specify Search String! At the moment this is lamely HardCoded  - FIX THIS NOW!             
 #               - Complete Tool Tips
 #               - Record Help Video of tool Set
-#               - Maybe add an Undo/Delete Option
 #
-#
-# RECENT FEATURES 
-#               - Basic UI Added
-#               - Undo Feature Added
 #====================================================
 # GUIDE
 #               - Use the Conventional naming system for this Rig kit - ex: "spider00_jnt_r_fronty00_leg_ik"
@@ -28,7 +24,7 @@
 ###########################################################################################################################################################
 """
 __author__ = "3DFramework"
-__version__ = "1.1"
+__version__ = "1.0"
 
 from PySide import QtCore, QtGui
 import maya.cmds as cmds
@@ -249,8 +245,7 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
 
         if validSelection:
             #All conditions are met, we can now continue to build the IK system
-            #Open an undo Chunk
-            cmds.undoInfo(openChunk=True)
+            print "Success"
             newIKName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "ikh")
             newEffName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "eff")
             newLocName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "loc")
@@ -292,12 +287,10 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
                     #newLoc = cmds.spaceLocator(name=newLocName)
                     #cmds.xform(newLoc, ws=True, t=jointPos)
                     cmds.poleVectorConstraint(newPoleCtrlName, newIKName)
+
+                
             else:
                 print "Not going to build Pole Vector"
-        #Close Undo Chunk
-        cmds.undoInfo(closeChunk=True)
-
-
 #====================================================
 #   Class for inheriting TDFR_IKSetup_Ui
 #====================================================   
