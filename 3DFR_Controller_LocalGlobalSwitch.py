@@ -78,6 +78,15 @@ def stripConstraintsFromGroup(ctrlGrp):
 			cmds.delete(node)
 
 
+def ctrlRename(ctrlName, nameAddition):
+	nameSplit = ctrlName.split("Ctrl")
+	newName = ctrlName
+	if len(nameSplit) > 1:
+		newName = nameSplit[0] + nameAddition
+	return newName
+
+
+
 #====================================================
 #   Create IK Setup UI
 #====================================================
@@ -92,7 +101,7 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		self.pmaSwitchNode = None
 
 		self.ctrlsTw = QtGui.QTreeWidget()
-		self.ctrlsTw.setToolTip("Please select the controller that you wish to create a local/Global Switch for and then click the button below")
+		self.ctrlsTw.setToolTip("Please select the controller that you wish to create a local/Global Switch for and then click the button below.\nThis tool will only run on one control at a time")
 		self.ctrlsTw.setHeaderLabel("")
 		self.ctrlsLbl = QtGui.QLabel("Specify Controller to add switch to")
 		self.ctrlsBtn = QtGui.QPushButton("Add Selected Control", self)
@@ -157,12 +166,15 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		mySel = cmds.ls(sl=True)
 		if ctrlSelectionFilter() and self.checkAllSelections(mySel):
 			mySel = cmds.ls(sl=True)
-			for ctrl in mySel:
-				treeItem = QtGui.QTreeWidgetItem(ctrl)
-				treeItem.setText(0, ctrl)
-				treeItem.setFlags(QtCore.Qt.ItemIsEnabled) #Set the Item so it cannot be selected
-				self.ctrlsTw.addTopLevelItem(treeItem)
-				self.ctrlList.append(ctrl)
+			if len(mySel) == 1:
+				for ctrl in mySel:
+					treeItem = QtGui.QTreeWidgetItem(ctrl)
+					treeItem.setText(0, ctrl)
+					treeItem.setFlags(QtCore.Qt.ItemIsEnabled) #Set the Item so it cannot be selected
+					self.ctrlsTw.addTopLevelItem(treeItem)
+					self.ctrlList.append(ctrl)
+			else:
+				cmds.warning("Incorrect Controller Selection, please only select a single controller")
 
 
 	def switchCtrlBtnPress(self):
@@ -207,7 +219,7 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		cmds.undoInfo(openChunk=True)		
 		self.checkSwitchCtrlAtt()	
 		#Setup plusMinusAverage Reversing Node
-		pMAName = nameSwitchRebuild(self.switchCtrl, "cv", "pma", nameEnd = self.masterCtrlAtt + "Switch")
+		pMAName = nameSwitchRebuild(self.switchCtrl, "cv", "pma", nameEnd = self.switchCtrlAtt + "Switch")
 		myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
 		self.pmaSwitchNode = myRigPm
 		cmds.setAttr(self.pmaSwitchNode + ".operation", 2)
@@ -215,13 +227,32 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		# print "MasterStuff :",self.masterCtrl,self.masterCtrlAtt
 		cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
 
-		#Now we need to duplicate the control twice. Rename the orginal to a "Ghost Control" and label up the others as local and global Controls
-        newCtrlPack = (cmds.duplicate(self.switchCtrl, renameChildren=True))
-        stripConstraintsFromGroup(newCtrlPack)  #Delete out any constraint Nodes in there
-        newGrpName = nameRebuild(jnt, nameSearchString, "jnt", "grp")
-        newCtrlName = nameRebuild(jnt, nameSearchString, "jnt", "cv")
-        cmds.rename(newCtrlPack[0], newGrpName)
-        cmds.rename(newCtrlPack[1], newCtrlName)
+		#Now we need to duplicate the control twice. Rename the orginal to a "Ghost Control" and label up the others as local and global Controls, first of all find the Control Group
+		currentCtrlGroup = cmds.listRelatives(self.ctrlList[0], parent = True)
+		newGlobalCtrlPack = (cmds.duplicate(currentCtrlGroup, renameChildren=True))
+		stripConstraintsFromGroup(newGlobalCtrlPack)  #Delete out any constraint Nodes in there
+		newGlobalGrpName = ctrlRename(newGlobalCtrlPack[0], "GlobalCtrl")
+		newGlobalCtrlName = ctrlRename(newGlobalCtrlPack[0], "GlobalCtrl")
+		cmds.rename(newGlobalCtrlPack[0], newGlobalGrpName)
+		cmds.rename(newGlobalCtrlPack[1], newGlobalCtrlName)
+
+		newLocalCtrlPack = cmds.duplicate(currentCtrlGroup, renameChildren=True)
+		stripConstraintsFromGroup(newLocalCtrlPack)  #Delete out any constraint Nodes in there
+		newLocalGrpName = ctrlRename(newLocalCtrlPack[0], "LocalCtrl")
+		newLocalCtrlName = ctrlRename(newLocalCtrlPack[0], "LocalCtrl")
+		cmds.rename(newLocalCtrlPack[0], newLocalGrpName)
+		cmds.rename(newLocalCtrlPack[1], newLocalCtrlName)
+
+		#Rename the original Controls to be Ghosts
+		currentGroupGhostName = ctrlRename(currentCtrlGroup[0], "Ghost")
+		currentGroupCtrlName = ctrlRename(self.ctrlList[0], "Ghost")
+		cmds.rename(currentCtrlGroup, currentGroupGhostName)
+		cmds.rename(self.ctrlList[0], currentGroupCtrlName)
+
+		#Now connect up the visibility of the new controls
+		cmds.connectAttr(self.pmaSwitchNode + ".output1D", newLocalCtrlName + ".visibility")
+		cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, newGlobalCtrlName + ".visibility")
+
 
 if __name__ == "__main__":
 	TDFR_ControllerGlobalLocalSwitch_Ui()
