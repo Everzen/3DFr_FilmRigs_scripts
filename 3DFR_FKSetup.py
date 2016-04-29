@@ -9,6 +9,8 @@
 #               - Complete Tool Tips
 #               - Record Help Video of tool Set
 #
+# RECENT FEATURES 
+#               - Undo Feature Added
 #====================================================
 # GUIDE
 #               - Use the Conventional naming system for this Rig kit - ex: "spider00_jnt_r_fronty00_leg_ik"
@@ -35,8 +37,8 @@ def jointNameCheck(jointName, nameSearchString):
         print "ERROR - Exiting tool, since \"" + nameSearchString + "\" is not in the joint naming convention for " + jointName
     return validName
 
-#Function for Rebuilding Names and adding numbers
-def nameRebuild(name,searchString,typeToReplace, replaceWith):
+#Function for Rebuilding Names
+def nameRebuild(name,searchString,typeToReplace, replaceWith, nameAddition = "ctrl"):
     nameBits = name.split("_")
        
     newName = ""
@@ -52,8 +54,9 @@ def nameRebuild(name,searchString,typeToReplace, replaceWith):
                     else:
                         newName = newName + nameEle + "_"
                   
-    newName = newName + "ctrl"
+    newName = newName + nameAddition
     return newName
+
 
 
 def fKBuilder(nameSearchString):
@@ -100,8 +103,8 @@ def fKBuilder(nameSearchString):
             for jnt in myJnts:
                 #print "My control is : " + myCtrlGrp
                 newCtrlPack = (cmds.duplicate(myCtrlGrp, renameChildren=True))
-                newGrpName = nameRebuild(jnt, nameSearchString, "jnt", "grp")
-                newCtrlName = nameRebuild(jnt, nameSearchString, "jnt", "cv")
+                newGrpName = nameRebuild(jnt, nameSearchString, "jnt", "grp", nameAddition = "fkCtrl")
+                newCtrlName = nameRebuild(jnt, nameSearchString, "jnt", "cv", nameAddition = "fkCtrl")
                 cmds.rename(newCtrlPack[0], newGrpName)
                 cmds.rename(newCtrlPack[1], newCtrlName)
                 myNewCtrlGrps.append(newGrpName)

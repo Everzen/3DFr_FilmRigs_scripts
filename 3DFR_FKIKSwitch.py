@@ -507,7 +507,6 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 
 	def switchBuild(self):
 		if self.switchSetupCheck():
-			#Close Undo Chunk
 			cmds.undoInfo(openChunk=True)			
 			self.pmaSwitchNode = None
 			self.checkMasterCtrlAtt()

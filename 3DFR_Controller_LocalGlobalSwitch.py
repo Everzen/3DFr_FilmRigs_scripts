@@ -55,6 +55,29 @@ def checkRepeatSelection(selList, checkSwitchJointList, checkMessage, isJoint=Tr
 	return validSelection
 
 
+def nameSwitchRebuild(name,typeToReplace, replaceWith, nameEnd = "ctrl"):
+    nameBits = name.split("_")
+    print "nameBits :", nameBits
+    newName = ""
+    for i,bit in enumerate(nameBits):
+        if bit == typeToReplace:
+            newName = newName + replaceWith + "_"
+        else:
+            newName = newName + bit + "_"
+      
+    newName = newName + nameEnd
+    return newName
+
+def stripConstraintsFromGroup(ctrlGrp):
+	"""Function to look at the children of the group and delete any constraints that are found in there"""
+	constraintList = ["parentConstraint", "pointConstraint", "orientConstraint", "aimConstraint","scaleConstraint" ]
+	children = cmds.listRelatives(ctrlGrp, children = True)
+	for node in children:
+		nType = cmds.nodeType(node)
+		if len(nType.split("Constraint")) > 1: #If the node type string splits around the word "Constraint" then we have a constraint, so delete it.
+			cmds.delete(node)
+
+
 #====================================================
 #   Create IK Setup UI
 #====================================================
@@ -66,7 +89,7 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		self.switchCtrl = None
 		self.switchCtrlAtts = []
 		self.switchCtrlAtt = None
-
+		self.pmaSwitchNode = None
 
 		self.ctrlsTw = QtGui.QTreeWidget()
 		self.ctrlsTw.setToolTip("Please select the controller that you wish to create a local/Global Switch for and then click the button below")
@@ -174,10 +197,31 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		self.switchCtrlAtts = []
 		self.switchCtrlAtt = None
 
+	def checkSwitchCtrlAtt(self):
+		self.switchCtrlAtt = None
+		if self.switchCtrlTw.currentItem():
+			self.switchCtrlAtt = self.switchCtrlTw.currentItem().text(0)
+
 	def switchBuild(self):
 		"""Method to loop through controls in the self.ctrlList, duplicate them and their groups and then create a Global/Local Switch"""
-		pass
+		cmds.undoInfo(openChunk=True)		
+		self.checkSwitchCtrlAtt()	
+		#Setup plusMinusAverage Reversing Node
+		pMAName = nameSwitchRebuild(self.switchCtrl, "cv", "pma", nameEnd = self.masterCtrlAtt + "Switch")
+		myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
+		self.pmaSwitchNode = myRigPm
+		cmds.setAttr(self.pmaSwitchNode + ".operation", 2)
+		cmds.setAttr(self.pmaSwitchNode + ".input1D[0]", 1)
+		# print "MasterStuff :",self.masterCtrl,self.masterCtrlAtt
+		cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
 
+		#Now we need to duplicate the control twice. Rename the orginal to a "Ghost Control" and label up the others as local and global Controls
+        newCtrlPack = (cmds.duplicate(self.switchCtrl, renameChildren=True))
+        stripConstraintsFromGroup(newCtrlPack)  #Delete out any constraint Nodes in there
+        newGrpName = nameRebuild(jnt, nameSearchString, "jnt", "grp")
+        newCtrlName = nameRebuild(jnt, nameSearchString, "jnt", "cv")
+        cmds.rename(newCtrlPack[0], newGrpName)
+        cmds.rename(newCtrlPack[1], newCtrlName)
 
 if __name__ == "__main__":
 	TDFR_ControllerGlobalLocalSwitch_Ui()

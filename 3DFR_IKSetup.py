@@ -24,7 +24,7 @@
 #
 # IMPORTANT NOTES
 #               - This setup does not deal with frozen transforms on objects. Make sure that all controls especially have not had transforms frozen
-#
+#               - All Undo Commands seem to be erratic. Be careful! 
 ###########################################################################################################################################################
 """
 __author__ = "3DFramework"
@@ -194,8 +194,8 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
             tempConst = cmds.parentConstraint(newLoc,newIK[0]) #Parent the IKHandle to the Locator
             #Now craete the new controller to control this section
             newCtrlPack = cmds.duplicate(self.ctrlGrp, renameChildren=True)
-            newGrpName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp")
-            newCtrlName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv")
+            newGrpName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp", nameAddition = "iKCtrl")
+            newCtrlName = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv", nameAddition = "iKCtrl")
             cmds.rename(newCtrlPack[0], newGrpName)
             cmds.rename(newCtrlPack[1], newCtrlName)
             #myNewCtrlGrps.append(newGrpName)
@@ -208,8 +208,8 @@ class TDFR_IKSetup_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
             if self.poleGrp:
                 if cmds.objExists(self.poleGrp):
                     newPoleCtrlPack = cmds.duplicate(self.poleGrp, renameChildren=True)
-                    newPoleGrpName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp","pole_ctrl")
-                    newPoleCtrlName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv","pole_ctrl")
+                    newPoleGrpName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "grp", nameAddition = "pVCtrl")
+                    newPoleCtrlName  = nameRebuild(myJnts[1], self.searchStringName, "jnt", "cv", nameAddition = "pVCtrl")
                     cmds.rename(newPoleCtrlPack[0], newPoleGrpName)
                     cmds.rename(newPoleCtrlPack[1], newPoleCtrlName)
                     tempConst = cmds.pointConstraint(myJnts[0],myJnts[1],newPoleGrpName)   
