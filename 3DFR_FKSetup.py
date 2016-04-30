@@ -112,7 +112,8 @@ def fKBuilder(nameSearchString):
                 tempConst = cmds.parentConstraint(jnt,newGrpName)
                 cmds.delete(tempConst) #Delete the temporary constraint
                 #Sonow correctly parent Constrain the Joint to the control
-                cmds.parentConstraint(cmds.listRelatives(newGrpName, children=True)[0],jnt)
+                parCName = nameRebuild(jnt, nameSearchString, "jnt", "parC", nameAddition = "fk")
+                cmds.parentConstraint(cmds.listRelatives(newGrpName, children=True)[0],jnt, name = parCName)
         else: 
             print "Selection Error - Bad Control or No Joints Selected"
         
