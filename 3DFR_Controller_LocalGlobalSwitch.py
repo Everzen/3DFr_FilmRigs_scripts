@@ -240,28 +240,45 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		stripConstraintsFromGroup(newGlobalCtrlPack)  #Delete out any constraint Nodes in there
 		newGlobalGrpName = ctrlRename(newGlobalCtrlPack[0], "GlobalCtrl")
 		newGlobalCtrlName = ctrlRename(newGlobalCtrlPack[1], "GlobalCtrl")
-		cmds.rename(newGlobalCtrlPack[0], newGlobalGrpName)
-		cmds.rename(newGlobalCtrlPack[1], newGlobalCtrlName)
+		newGlobalGrpName = cmds.rename(newGlobalCtrlPack[0], newGlobalGrpName)
+		newGlobalCtrlName  =cmds.rename(newGlobalCtrlPack[1], newGlobalCtrlName)
 		shapeRecolour(newGlobalCtrlName, 13) # Colour Global Control Red
 
 		newLocalCtrlPack = cmds.duplicate(currentCtrlGroup, renameChildren=True)
 		stripConstraintsFromGroup(newLocalCtrlPack)  #Delete out any constraint Nodes in there
 		newLocalGrpName = ctrlRename(newLocalCtrlPack[0], "LocalCtrl")
 		newLocalCtrlName = ctrlRename(newLocalCtrlPack[1], "LocalCtrl")
-		cmds.rename(newLocalCtrlPack[0], newLocalGrpName)
-		cmds.rename(newLocalCtrlPack[1], newLocalCtrlName)
+		newLocalGrpName = cmds.rename(newLocalCtrlPack[0], newLocalGrpName)
+		newLocalCtrlName = cmds.rename(newLocalCtrlPack[1], newLocalCtrlName)
 		shapeRecolour(newLocalCtrlName, 17) # Colour Local Control Yellow
 
 		#Rename the original Controls to be Ghosts
 		currentGroupGhostName = ctrlRename(currentCtrlGroup[0], "Ghost")
 		currentCtrlGhostName = ctrlRename(self.ctrlList[0], "Ghost")
-		cmds.rename(currentCtrlGroup, currentGroupGhostName)
-		cmds.rename(self.ctrlList[0], currentCtrlGhostName)
+		currentGroupGhostName = cmds.rename(currentCtrlGroup, currentGroupGhostName) #reassigning variable to insure unique Name
+		currentCtrlGhostName =cmds.rename(self.ctrlList[0], currentCtrlGhostName)
 		shapeRecolour(currentCtrlGhostName, 2) #2 is dark grey
 
 		#Now connect up the visibility of the new controls
 		cmds.connectAttr(self.pmaSwitchNode + ".output1D", newLocalCtrlName + ".visibility")
 		cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, newGlobalCtrlName + ".visibility")
+
+		#Now we need to add the parent constraint, and sort out all aspects like naming etc. 
+		parConstName = nameSwitchRebuild(self.switchCtrl, "cv", "parC", nameEnd = self.switchCtrlAtt + "Switch")
+		parConst = (cmds.parentConstraint(newLocalCtrlName, newGlobalCtrlName, currentCtrlGhostName, name = parConstName))[0]
+		# print "parConst", parConst 
+		weightAtts = cmds.parentConstraint(parConst, q=1, weightAliasList = True)
+		# print "weightAtts", weightAtts
+		for i, att in enumerate(weightAtts):
+			if i == 0: #Set first Local Weight
+				print "moo"
+				cmds.renameAttr(parConst + "." + att , "localWeight")
+			elif i == 1: #Set Second Global Weight
+				print "bob"
+				cmds.renameAttr(parConst + "." + att , "globalWeight")
+			#Now we make the correct connections to control the weights
+		cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, parConst + ".globalWeight")
+		cmds.connectAttr(self.pmaSwitchNode + ".output1D", parConst + ".localWeight")
 
 
 if __name__ == "__main__":
