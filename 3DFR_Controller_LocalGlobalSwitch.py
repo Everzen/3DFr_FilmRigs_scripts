@@ -36,7 +36,7 @@ def ctrlSelectionFilter():
 	mySel = cmds.ls(sl=True)
 	myJnts = cmds.ls(mySel, type = "joint") #Filter through the selection in order make sure all things are joints.
 	if len(myJnts) == 0 and len(mySel) > 0: #This means we have at least 1 none joint selected
-		print "Horray we have a good selection"	
+		# print "Horray we have a good selection"	
 		validSelection = True
 	else: #We have 2 joints so we can continue - Now work down from parent to find the child
 		cmds.warning('Incorrect Initial Selection - Please select just your controls (no joints)')#If we do not have 2 joints selected then exit
@@ -85,6 +85,13 @@ def ctrlRename(ctrlName, nameAddition):
 		newName = nameSplit[0] + nameAddition
 	return newName
 
+def shapeRecolour(obj, colourIndex):
+	"""Function to loop through all shapes on a node and change: 2-dark grey, 13-red, 17-yellow, 18-cyan, 20-cream"""
+	objShapes = cmds.listRelatives(obj, children = True, shapes =True)
+	#Now loop through shape nodes and change their colour
+	for shape in objShapes:
+	    cmds.setAttr(shape + '.overrideEnabled', 1)
+	    cmds.setAttr(shape + '.overrideColor', colourIndex)	# color Index to represent colour
 
 
 #====================================================
@@ -232,22 +239,25 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		newGlobalCtrlPack = (cmds.duplicate(currentCtrlGroup, renameChildren=True))
 		stripConstraintsFromGroup(newGlobalCtrlPack)  #Delete out any constraint Nodes in there
 		newGlobalGrpName = ctrlRename(newGlobalCtrlPack[0], "GlobalCtrl")
-		newGlobalCtrlName = ctrlRename(newGlobalCtrlPack[0], "GlobalCtrl")
+		newGlobalCtrlName = ctrlRename(newGlobalCtrlPack[1], "GlobalCtrl")
 		cmds.rename(newGlobalCtrlPack[0], newGlobalGrpName)
 		cmds.rename(newGlobalCtrlPack[1], newGlobalCtrlName)
+		shapeRecolour(newGlobalCtrlName, 13) # Colour Global Control Red
 
 		newLocalCtrlPack = cmds.duplicate(currentCtrlGroup, renameChildren=True)
 		stripConstraintsFromGroup(newLocalCtrlPack)  #Delete out any constraint Nodes in there
 		newLocalGrpName = ctrlRename(newLocalCtrlPack[0], "LocalCtrl")
-		newLocalCtrlName = ctrlRename(newLocalCtrlPack[0], "LocalCtrl")
+		newLocalCtrlName = ctrlRename(newLocalCtrlPack[1], "LocalCtrl")
 		cmds.rename(newLocalCtrlPack[0], newLocalGrpName)
 		cmds.rename(newLocalCtrlPack[1], newLocalCtrlName)
+		shapeRecolour(newLocalCtrlName, 17) # Colour Local Control Yellow
 
 		#Rename the original Controls to be Ghosts
 		currentGroupGhostName = ctrlRename(currentCtrlGroup[0], "Ghost")
-		currentGroupCtrlName = ctrlRename(self.ctrlList[0], "Ghost")
+		currentCtrlGhostName = ctrlRename(self.ctrlList[0], "Ghost")
 		cmds.rename(currentCtrlGroup, currentGroupGhostName)
-		cmds.rename(self.ctrlList[0], currentGroupCtrlName)
+		cmds.rename(self.ctrlList[0], currentCtrlGhostName)
+		shapeRecolour(currentCtrlGhostName, 2) #2 is dark grey
 
 		#Now connect up the visibility of the new controls
 		cmds.connectAttr(self.pmaSwitchNode + ".output1D", newLocalCtrlName + ".visibility")
