@@ -11,6 +11,7 @@
 #				- Undo Queue save is added, but is not working - Maybe try and fix, but for now save before execution of tool
 #
 # RECENT FEATURES 
+#               - Constraints switched to Orientation Constraints between Joints, because parent Constraints resulted in changing joint lengths
 #               - Check now included so it does not build extra plusMinuAverage nodes for the switch. It uses the one already connected to the attribute if it exists!
 #				- Now runs without the need to specify joints, so you can setup for ctrls but themselves. Enables you to add extra controls to a switch setup, after the initial setup.
 #====================================================
@@ -503,19 +504,19 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 		return validSetup
 
 
-	def jointParentConstraints(self):
+	def jointOrientConstraints(self):
 		"""Function to set up the parent contraints on all of the joints"""
 		for i, jnt in enumerate(self.masterJointList):
-			parConstName = nameConstraintRebuild(jnt.getName(), self.nameStringLE.text(), "jnt",  "parC", nameEnd = (self.masterCtrlAtt + "Switch"))
-			parConst = cmds.parentConstraint(self.fkJointList[i].getName(), self.ikJointList[i].getName(),jnt.getName(), name = parConstName)
-			for i, att in enumerate(cmds.parentConstraint(parConstName, q=1, weightAliasList = True)):
+			oriConstName = nameConstraintRebuild(jnt.getName(), self.nameStringLE.text(), "jnt",  "oriC", nameEnd = (self.masterCtrlAtt + "Switch"))
+			oriConst = cmds.orientConstraint(self.fkJointList[i].getName(), self.ikJointList[i].getName(),jnt.getName(), name = oriConstName)
+			for i, att in enumerate(cmds.orientConstraint(oriConstName, q=1, weightAliasList = True)):
 				if i == 0: #Set first FK weight
-					cmds.renameAttr(parConstName + "." + att , "fkWeight")
+					cmds.renameAttr(oriConstName + "." + att , "fkWeight")
 				elif i == 1: #Set Second IK Weight 
-					cmds.renameAttr(parConstName + "." + att , "ikWeight")
+					cmds.renameAttr(oriConstName + "." + att , "ikWeight")
 				#Now we make the correct connections to control the weights
-			cmds.connectAttr(self.masterCtrl + "." + self.masterCtrlAtt, parConstName + ".ikWeight")
-			cmds.connectAttr(self.pmaSwitchNode + ".output1D", parConstName + ".fkWeight")
+			cmds.connectAttr(self.masterCtrl + "." + self.masterCtrlAtt, oriConstName + ".ikWeight")
+			cmds.connectAttr(self.pmaSwitchNode + ".output1D", oriConstName + ".fkWeight")
 
 	def controlsVisibility(self):
 		for ctrl in self.fkCtrlList:
@@ -546,7 +547,7 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 				# print "MasterStuff :",self.masterCtrl,self.masterCtrlAtt
 				cmds.connectAttr(self.masterCtrl + "." + self.masterCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
 			#Now we have the switch, lets add the joint Parent Constraints
-			self.jointParentConstraints()
+			self.jointOrientConstraints()
 			#Now implement all the ctrl; visibility
 			self.controlsVisibility()
 			cmds.undoInfo(closeChunk=True)
