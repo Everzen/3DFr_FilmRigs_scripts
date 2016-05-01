@@ -7,10 +7,11 @@
 #       
 # TO DO
 #               - In the long run setup little "L" and "G" shapes to attach to the local and Global Control. But for this, probably just use different colours and names, but the same Curve Shape
-#               - Check to not build extra plusMinuAverage nodes for the switch. It should use the one already connected to the attribute if it exists!
+#
 #
 # RECENT FEATURES 
-#               - Basic UI Setup
+#               - Check now included so it does not build extra plusMinuAverage nodes for the switch. It uses the one already connected to the attribute if it exists!
+#
 #====================================================
 # GUIDE
 #               - 
@@ -94,8 +95,28 @@ def shapeRecolour(obj, colourIndex):
 	    cmds.setAttr(shape + '.overrideColor', colourIndex)	# color Index to represent colour
 
 
+def checkForPlusMinusAverage(switchNode, switchAtt):
+	"""A function to loop through the output connections and check for a plusMinusAverage Node. Currently this script will return only the first found PMA if more than one is connected"""
+	switchPMA = None
+	switchCon = cmds.listConnections(switchNode + "." + switchAtt, destination=True)
+	switchPMAList = []
+
+	if switchCon != None:  # listConnections returns "None" if there are no connection so we have to play it safe and check
+		for con in switchCon:
+			if cmds.nodeType(con) == "plusMinusAverage":
+				if len(con.split("pma")) > 1: #If this name splits then it is probably one of our generated plusMinusAverage Nodes
+					if len(con.split("switch")) > 1: # If this name splits too then it is almost definitely one of our generated plusMinusAverage Nodes
+						switchPMAList.append(con)
+	if len(switchPMAList) >= 1:
+		switchPMA = switchPMAList[0]
+		if len(switchPMAList) > 1 :
+			cmds.warning("More than one \"plusMinusAverage\" has been found, connecting to the first one found in the destination connection list")
+	return switchPMA
+
+
+
 #====================================================
-#   Create IK Setup UI
+#   Create Global Local Switch Setup for the Control - UI
 #====================================================
 class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialog):
 	"""Class to block out all the main functionality of the IKSetup UI"""
@@ -227,12 +248,22 @@ class TDFR_ControllerGlobalLocalSwitch_Ui(MayaQWidgetDockableMixin, QtGui.QDialo
 		self.checkSwitchCtrlAtt()	
 		#Setup plusMinusAverage Reversing Node
 		pMAName = nameSwitchRebuild(self.switchCtrl, "cv", "pma", nameEnd = self.switchCtrlAtt + "Switch")
-		myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
-		self.pmaSwitchNode = myRigPm
-		cmds.setAttr(self.pmaSwitchNode + ".operation", 2)
-		cmds.setAttr(self.pmaSwitchNode + ".input1D[0]", 1)
-		# print "MasterStuff :",self.masterCtrl,self.masterCtrlAtt
-		cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
+		#Check to see if a plusMinusAverage Node already exists
+		testForSwitch = checkForPlusMinusAverage(self.switchCtrl, self.switchCtrlAtt)
+		# print "MC",self.switchCtrl, 
+		# print "MCA",self.switchCtrlAtt
+		# print "testForSwitch",testForSwitch
+		if testForSwitch != None: 
+			self.pmaSwitchNode = testForSwitch
+			cmds.warning("Switch PlusMinusAverage Node has been found for this attribute - Connecting to this node.")
+		else:
+			#PlusMinusAverage node only needs to be created and connected if it does not already exist! 
+			myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
+			self.pmaSwitchNode = myRigPm
+			cmds.setAttr(self.pmaSwitchNode + ".operation", 2)
+			cmds.setAttr(self.pmaSwitchNode + ".input1D[0]", 1)
+			# print "MasterStuff :",self.switchCtrl,self.switchCtrlAtt
+			cmds.connectAttr(self.switchCtrl + "." + self.switchCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
 
 		#Now we need to duplicate the control twice. Rename the orginal to a "Ghost Control" and label up the others as local and global Controls, first of all find the Control Group
 		currentCtrlGroup = cmds.listRelatives(self.ctrlList[0], parent = True)
