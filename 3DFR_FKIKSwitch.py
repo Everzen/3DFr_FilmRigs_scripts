@@ -531,11 +531,12 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 			pMAName = nameSwitchRebuild(self.masterCtrl, "cv", "pma", nameEnd = self.masterCtrlAtt + "Switch")
 			#Check to see if a plusMinusAverage Node already exists
 			testForSwitch = checkForPlusMinusAverage(self.masterCtrl, self.masterCtrlAtt)
-			print "MC",self.masterCtrl, 
-			print "MCA",self.masterCtrlAtt
-			print "testForSwitch",testForSwitch
+			# print "MC",self.masterCtrl, 
+			# print "MCA",self.masterCtrlAtt
+			# print "testForSwitch",testForSwitch
 			if testForSwitch != None: 
 				self.pmaSwitchNode = testForSwitch
+				cmds.warning("Switch PlusMinusAverage Node has been found for this attribute - Connecting to this node.")
 			else:
 				#PlusMinusAverage node only needs to be created and connected if it does not already exist! 
 				myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
