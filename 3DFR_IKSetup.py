@@ -6,6 +6,7 @@
 #               
 #       
 # TO DO
+#               - Needs upgrade to work better on single chains of just 2 joints... gets things wrong
 #               - Complete Tool Tips
 #               - Record Help Video of tool Set
 #               - Maybe add an Undo/Delete Option

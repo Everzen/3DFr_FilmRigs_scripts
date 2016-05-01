@@ -10,7 +10,7 @@
 #               - Record Help Video of tool Set
 #
 # RECENT FEATURES 
-#               - Undo Feature Added
+#               - Undo Feature Added - Be careful Unstable at best! 
 #====================================================
 # GUIDE
 #               - Use the Conventional naming system for this Rig kit - ex: "spider00_jnt_r_fronty00_leg_ik"
