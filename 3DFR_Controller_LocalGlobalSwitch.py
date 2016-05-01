@@ -7,7 +7,7 @@
 #       
 # TO DO
 #               - In the long run setup little "L" and "G" shapes to attach to the local and Global Control. But for this, probably just use different colours and names, but the same Curve Shape
-#
+#               - Check to not build extra plusMinuAverage nodes for the switch. It should use the one already connected to the attribute if it exists!
 #
 # RECENT FEATURES 
 #               - Basic UI Setup
