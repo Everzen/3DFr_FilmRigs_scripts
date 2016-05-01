@@ -12,6 +12,7 @@
 #
 # RECENT FEATURES 
 #               - Check now included so it does not build extra plusMinuAverage nodes for the switch. It uses the one already connected to the attribute if it exists!
+#				- Now runs without the need to specify joints, so you can setup for ctrls but themselves. Enables you to add extra controls to a switch setup, after the initial setup.
 #====================================================
 # GUIDE
 #				- Use Tool Tips for now, but add this guide
@@ -472,21 +473,21 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 	def switchSetupCheck(self):
 		validSetup = True
 		self.checkMasterCtrlAtt()
-		if len(self.fkJointList) == 0:
-			cmds.warning("You need to specify the FK Joints")
-			validSetup = False
-		if len(self.ikJointList) == 0:
-			cmds.warning("You need to specify the IK Joints")
-			validSetup = False
+		# if len(self.fkJointList) == 0:
+		# 	cmds.warning("You need to specify the FK Joints")
+		# 	validSetup = False
+		# if len(self.ikJointList) == 0:
+		# 	cmds.warning("You need to specify the IK Joints")
+		# 	validSetup = False
 		if len(self.masterJointList) == 0:
-			cmds.warning("You need to specify the Master Joints")
-			validSetup = False		
+			cmds.warning("No Master Joints - Switch operations will just run on the controls to give visibility switches")
+		# 	validSetup = False		
 		if len(self.fkCtrlList) == 0:
-			cmds.warning("You need to specify the FK Controls")
-			validSetup = False	
+			cmds.warning("No FK Controls specified, so no visibility switching will occur for FK Controls")
+			# validSetup = False	
 		if len(self.ikCtrlList) == 0:
-			cmds.warning("You need to specify the IK Controls")
-			validSetup = False	
+			cmds.warning("No IK Controls specified, so no visibility switching will occur for IK Controls")
+			# validSetup = False	
 		if not self.masterCtrlAtt:
 			cmds.warning("You need to specify the Master Control Attribute")
 			validSetup = False
@@ -496,7 +497,6 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 		if not (len(self.fkJointList) == len(self.ikJointList) ==  len(self.masterJointList)):
 			cmds.warning("Incorrect Joint Numbers: You need to speciy the same number of FK, IK and Master Joints")
 			validSetup = False
-		print "name len",len(self.nameStringLE.text())
 		if len(self.nameStringLE.text()) == 0:
 			cmds.warning("No name string has been specificed")
 			validSetup = False		
