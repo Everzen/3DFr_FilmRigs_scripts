@@ -10,6 +10,8 @@
 #				- Record Help Video of tool Set
 #				- Undo Queue save is added, but is not working - Maybe try and fix, but for now save before execution of tool
 #
+# RECENT FEATURES 
+#               - Check now included so it does not build extra plusMinuAverage nodes for the switch. It uses the one already connected to the attribute if it exists!
 #====================================================
 # GUIDE
 #				- Use Tool Tips for now, but add this guide
@@ -89,6 +91,7 @@ def nameSwitchRebuild(name,typeToReplace, replaceWith, nameEnd = "ctrl"):
     newName = newName + nameEnd
     return newName
 
+
 def nameConstraintRebuild(name,searchString,typeToReplace, replaceWith, nameEnd = "ctrl"):
     nameBits = name.split("_")
        
@@ -107,6 +110,25 @@ def nameConstraintRebuild(name,searchString,typeToReplace, replaceWith, nameEnd 
                   
     newName = newName + nameEnd
     return newName
+
+
+def checkForPlusMinusAverage(switchNode, switchAtt):
+	"""A function to loop through the output connections and check for a plusMinusAverage Node. Currently this script will return only the first found PMA if more than one is connected"""
+	switchPMA = None
+	switchCon = cmds.listConnections(switchNode + "." + switchAtt, destination=True)
+	switchPMAList = []
+
+	if switchCon != None:  # listConnections returns "None" if there are no connection so we have to play it safe and check
+		for con in switchCon:
+			if cmds.nodeType(con) == "plusMinusAverage":
+				if len(con.split("pma")) > 1: #If this name splits then it is probably one of our generated plusMinusAverage Nodes
+					if len(con.split("switch")) > 1: # If this name splits too then it is almost definitely one of our generated plusMinusAverage Nodes
+						switchPMAList.append(con)
+	if len(switchPMAList) >= 1:
+		switchPMA = switchPMAList[0]
+		if len(switchPMAList) > 1 :
+			cmds.warning("More than one \"plusMinusAverage\" has been found, connecting to the first one found in the destination connection list")
+	return switchPMA
 
 
 class SwitchJoint(object):
@@ -185,10 +207,6 @@ class JointTw(QtGui.QTreeWidget):
 				parentTreeItem = self.jointList[i-1].getTreeItem()
 				parentTreeItem.addChild(jnt.getTreeItem())
 				jnt.getTreeItem().setExpanded(True)
-
-
-
-
 
 
 
@@ -511,12 +529,21 @@ class FRFKtoIKSwitchUI(QtGui.QWidget):
 			self.pmaSwitchNode = None
 			self.checkMasterCtrlAtt()
 			pMAName = nameSwitchRebuild(self.masterCtrl, "cv", "pma", nameEnd = self.masterCtrlAtt + "Switch")
-			myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
-			self.pmaSwitchNode = myRigPm
-			cmds.setAttr(self.pmaSwitchNode + ".operation", 2)
-			cmds.setAttr(self.pmaSwitchNode + ".input1D[0]", 1)
-			print "MasterStuff :",self.masterCtrl,self.masterCtrlAtt
-			cmds.connectAttr(self.masterCtrl + "." + self.masterCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
+			#Check to see if a plusMinusAverage Node already exists
+			testForSwitch = checkForPlusMinusAverage(self.masterCtrl, self.masterCtrlAtt)
+			print "MC",self.masterCtrl, 
+			print "MCA",self.masterCtrlAtt
+			print "testForSwitch",testForSwitch
+			if testForSwitch != None: 
+				self.pmaSwitchNode = testForSwitch
+			else:
+				#PlusMinusAverage node only needs to be created and connected if it does not already exist! 
+				myRigPm = cmds.shadingNode('plusMinusAverage', asUtility=True, name= pMAName)
+				self.pmaSwitchNode = myRigPm
+				cmds.setAttr(self.pmaSwitchNode + ".operation", 2)
+				cmds.setAttr(self.pmaSwitchNode + ".input1D[0]", 1)
+				# print "MasterStuff :",self.masterCtrl,self.masterCtrlAtt
+				cmds.connectAttr(self.masterCtrl + "." + self.masterCtrlAtt, self.pmaSwitchNode + ".input1D[1]")
 			#Now we have the switch, lets add the joint Parent Constraints
 			self.jointParentConstraints()
 			#Now implement all the ctrl; visibility
