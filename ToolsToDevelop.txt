@@ -1,0 +1,7 @@
+
+
+1) Align tool - Create the appropriate Constraint and then delete it out
+2) Name side switch - Automatically replaces "_l_" with "_r_" or visa versa
+3) Flip group creator for mirrored controls
+4)
+5)
