@@ -5,3 +5,4 @@
 3) Flip group creator for mirrored controls
 4) Need to adjust IKSetup to work over little single chains
 5) Create -x axis flipped controller in an "oreFlip" group
+6) A tool that has about 6 search and replace slots where we can put words in like _l_ , _r_ , or front , rear ... etc. Probably needs to save out to an XML file
